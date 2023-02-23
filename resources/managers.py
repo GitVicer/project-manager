@@ -42,4 +42,4 @@ class ManagerList(MethodView):
         except SQLAlchemyError:
             abort(500, message="An error occurred while inserting the manager.")
 
-        return manager
+        return manager_data

@@ -14,4 +14,4 @@ class ProjectSchema(PlainProjectSchema):
 
 class ManagerSchema(PlainManagerSchema):
     project_id = fields.Int(required = True,load_only = True) 
-    project = fields.Nested(PlainManagerSchema(),dump_only=True)
+    project = fields.Nested(PlainProjectSchema(),dump_only=True)
