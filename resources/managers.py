@@ -4,11 +4,14 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ManagerModel
 from schemas import ManagerSchema
+from flask_jwt_extended import jwt_required
 
 blp = Blueprint("Managers", "managers")
 
 @blp.route("/manager/<string:manager_id>")
 class Manager(MethodView):
+    
+    @jwt_required()
     @blp.response(200, ManagerSchema)
     def get(self, manager_id):
         manager = ManagerModel.query.get_or_404(manager_id)
@@ -25,10 +28,12 @@ class Manager(MethodView):
 @blp.route("/manager")
 class ManagerList(MethodView):
     
+    @jwt_required()
     @blp.response(200, ManagerSchema(many=True))
     def get(self):
         return ManagerModel.query.all()
-
+    
+    @jwt_required()
     @blp.arguments(ManagerSchema)
     @blp.response(201, ManagerSchema)
     def post(self, manager_data):

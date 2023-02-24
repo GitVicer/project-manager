@@ -1,8 +1,10 @@
 from flask import Flask
 from flask_smorest import Api
+from flask_jwt_extended import JWTManager
 
 from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
+from resources.users import blp as userblueprint
 
 from db import db
 
@@ -20,12 +22,16 @@ def create_app():
     
     db.init_app(app)
     api = Api(app)
+    app.config["JWT_SECRET_KEY"] = "vicky"
+    jwt = JWTManager(app)
+
 
     with app.app_context():
         db.create_all()
 
     api.register_blueprint(projectblueprint)
     api.register_blueprint(managerblueprint)
+    api.register_blueprint(userblueprint)
 
     return app    
 
