@@ -12,7 +12,7 @@ from passlib.hash import pbkdf2_sha256
 from db import db
 from models import UserModel
 from schemas import UserSchema
-#from blocklist import BLOCKLIST
+from blocklist import BLOCKLIST
 
 
 blp = Blueprint("Users", "users", description="Operations on users")

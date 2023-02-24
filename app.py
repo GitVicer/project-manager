@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_smorest import Api
 from flask_jwt_extended import JWTManager
-
+from blocklist import BLOCKLIST
 from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
 from resources.users import blp as userblueprint
@@ -25,7 +25,12 @@ def create_app():
     app.config["JWT_SECRET_KEY"] = "vicky"
     jwt = JWTManager(app)
 
+    @jwt.token_in_blocklist_loader
+    def check_if_token_in_blocklist(jwt_header, jwt_payload):
+        return jwt_payload["jti"] in BLOCKLIST
+    
 
+    
     with app.app_context():
         db.create_all()
 
