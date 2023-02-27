@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ProjectModel
-from schemas import ProjectSchema
+from schemas import ProjectSchema, ProjectUpdateSchema
 
 blp = Blueprint("Projects", "projects")
 
@@ -24,6 +24,22 @@ class Project(MethodView):
         db.session.delete(project)
         db.session.commit()
         return {"message": "Project deleted"}, 200
+    
+    @blp.arguments(ProjectUpdateSchema)
+    @blp.response(200, ProjectSchema)
+    def put(self, project_data, project_id):
+        project = ProjectModel.query.get([project_id])
+
+        if project:
+            project.name = project_data["name"]
+            project.client = project_data["client"]
+        else:
+            project = ProjectModel(id=project_id, **project_data)
+
+        db.session.add(project)
+        db.session.commit()
+
+        return project
     
 @blp.route("/project")
 class ProjectList(MethodView):

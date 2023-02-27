@@ -20,3 +20,10 @@ class UserSchema(Schema):
     id = fields.Int(dump_only=True)
     username = fields.Str(required=True)
     password = fields.Str(required=True, load_only=True)
+
+class ManagerUpdateSchema(Schema):
+    name = fields.Str(required = True,validate=validate.Length(min=1,max=20))   
+
+class ProjectUpdateSchema(Schema):
+    name = fields.Str(validate=validate.Length(min=1,max=20))  
+    client = fields.Str(validate=validate.Length(min=1,max=20))

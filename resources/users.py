@@ -62,12 +62,6 @@ class UserLogout(MethodView):
 
 @blp.route("/user/<int:user_id>")
 class User(MethodView):
-    """
-    This resource can be useful when testing our Flask app.
-    We may not want to expose it to public users, but for the
-    sake of demonstration, it can be useful
-    when we are manipulating data regarding the users.
-    """
 
     @blp.response(200, UserSchema)
     def get(self, user_id):
@@ -79,6 +73,14 @@ class User(MethodView):
         db.session.delete(user)
         db.session.commit()
         return {"message": "User deleted."}, 200
+    
+@blp.route("/user")
+class ProjectList(MethodView):
+    
+    
+    @blp.response(200, UserSchema(many=True))
+    def get(self):
+        return UserModel.query.all()
 
 
 @blp.route("/refresh")
@@ -87,7 +89,6 @@ class TokenRefresh(MethodView):
     def post(self):
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
-        # Make it clear that when to add the refresh token to the blocklist will depend on the app design
         jti = get_jwt()["jti"]
         BLOCKLIST.add(jti)
         return {"access_token": new_token}, 200

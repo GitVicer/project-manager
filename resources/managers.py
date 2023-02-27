@@ -3,7 +3,7 @@ from flask_smorest import Blueprint, abort
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ManagerModel
-from schemas import ManagerSchema
+from schemas import ManagerSchema, ManagerUpdateSchema
 from flask_jwt_extended import jwt_required
 
 blp = Blueprint("Managers", "managers")
@@ -24,7 +24,20 @@ class Manager(MethodView):
         db.session.commit()
         return {"message": "Manager deleted"}
     
-# implement put operation
+    @blp.arguments(ManagerUpdateSchema)
+    @blp.response(200, ManagerSchema)
+    def put(self, manager_data, manager_id):
+        manager = ManagerModel.query.get(manager_id)
+
+        if manager:
+            manager.name = manager_data["name"]
+        else:
+            manager = ManagerModel(id=manager_id, **manager_data)
+
+        db.session.add(manager)
+        db.session.commit()
+
+        return manager
 
 @blp.route("/manager")
 class ManagerList(MethodView):
@@ -49,3 +62,5 @@ class ManagerList(MethodView):
             abort(500, message="An error occurred while inserting the manager.")
 
         return manager_data
+    
+    
