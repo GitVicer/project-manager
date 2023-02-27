@@ -7,4 +7,4 @@ class ManagerModel(db.Model):
     name = db.Column(db.String, unique = True, nullable = False)
 
     project_id = db.Column(db.Integer, db.ForeignKey("Projects.id"), unique = False, nullable = False)
-    Project = db.relationship("ProjectModel", back_populates= "Manager")
+    project = db.relationship("ProjectModel", back_populates= "managers")

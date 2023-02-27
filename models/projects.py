@@ -7,6 +7,6 @@ class ProjectModel(db.Model):
     name = db.Column(db.String, unique = True, nullable = False)
     client = db.Column(db.String, unique = True, nullable = False)
 
-    Manager = db.relationship("ManagerModel", back_populates = "Project",cascade = "all,delete")
+    managers = db.relationship("ManagerModel", back_populates = "project",cascade = "all,delete")
 
 
