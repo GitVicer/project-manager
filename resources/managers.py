@@ -11,12 +11,13 @@ blp = Blueprint("Managers", "managers")
 @blp.route("/manager/<string:manager_id>")
 class Manager(MethodView):
     
-    @jwt_required()
+   
     @blp.response(200, ManagerSchema)
     def get(self, manager_id):
         manager = ManagerModel.query.get_or_404(manager_id)
         return manager
     
+    @jwt_required()
     def delete(self, manager_id):
         manager = ManagerModel.query.get_or_404(manager_id)
         db.session.delete(manager)
@@ -28,12 +29,12 @@ class Manager(MethodView):
 @blp.route("/manager")
 class ManagerList(MethodView):
     
-    @jwt_required()
+    
     @blp.response(200, ManagerSchema(many=True))
     def get(self):
         return ManagerModel.query.all()
     
-    @jwt_required()
+    
     @blp.arguments(ManagerSchema)
     @blp.response(201, ManagerSchema)
     def post(self, manager_data):

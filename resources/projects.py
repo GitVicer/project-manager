@@ -12,7 +12,7 @@ blp = Blueprint("Projects", "projects")
 @blp.route("/project/<string:project_id>")
 class Project(MethodView):
     
-    @jwt_required()
+    
     @blp.response(200, ProjectSchema)
     def get(self, project_id):
         project = ProjectModel.query.get_or_404(project_id)
@@ -28,12 +28,12 @@ class Project(MethodView):
 @blp.route("/project")
 class ProjectList(MethodView):
     
-    @jwt_required()
+    
     @blp.response(200, ProjectSchema(many=True))
     def get(self):
         return ProjectModel.query.all()
     
-    @jwt_required()
+    
     @blp.arguments(ProjectSchema)
     @blp.response(201, ProjectSchema)
     def post(self, project_data):
