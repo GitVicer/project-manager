@@ -24,12 +24,18 @@ class UserRegister(MethodView):
     def post(self, user_data):
         if UserModel.query.filter(UserModel.username == user_data["username"]).first():
             abort(409, message="A user with that username already exists.")
-
+        
         user = UserModel(
             username=user_data["username"],
-            password=pbkdf2_sha256.hash(user_data["password"]),
+            password=pbkdf2_sha256.hash(user_data["password"])
         )
+
         db.session.add(user)
+        db.session.commit()
+
+        if user.id==1:
+            user.AdminStatus = True
+
         db.session.commit()
 
         return {"message": "User created successfully."}, 201
