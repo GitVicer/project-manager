@@ -80,6 +80,26 @@ class User(MethodView):
         db.session.commit()
         return {"message": "User deleted."}, 200
     
+    @jwt_required()
+    def put(self, user_id):
+        current_user_id = get_jwt_identity()
+        current_user = UserModel.query.get_or_404(current_user_id)
+        if current_user.AdminStatus == True:
+            user = UserModel.query.get_or_404(user_id)
+            if user.AdminStatus == False:
+                user.AdminStatus = True
+                db.session.commit()
+                name = user.username
+                return{"message" : f"{name} is now an admin"}
+            else:
+                user.AdminStatus = False    
+                db.session.commit()
+                name = user.username
+                return{"message" : f"{name} is not an admin now"}
+        else:
+            abort(400, message="Admin privilege required")
+
+    
 @blp.route("/user")
 class ProjectList(MethodView):
     
