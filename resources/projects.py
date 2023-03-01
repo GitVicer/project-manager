@@ -52,7 +52,7 @@ class ProjectList(MethodView):
         if user.AdminStatus == True:
             return ProjectModel.query.all()
         else:
-            abort(400, message = "Admin priviledge required")
+            abort(400, message = "Admin privilege required")
 
     
     @blp.arguments(ProjectSchema)

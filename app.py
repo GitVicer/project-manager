@@ -20,8 +20,10 @@ def create_app():
     app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
     app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
     app.config["JWT_SECRET_KEY"] = "vicky"
-
-    
+    app.config['GOOGLE_CLIENT_ID'] = '593036279700-saprc1547kutuq211j5qp4gf3t2i46vt.apps.googleusercontent.com'
+    app.config['GOOGLE_CLIENT_SECRET'] = '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'
+    app.secret_key = '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'
+    GOOGLE_CLIENT_ID = "593036279700-saprc1547kutuq211j5qp4gf3t2i46vt.apps.googleusercontent.com"
     db.init_app(app)
     api = Api(app)
     jwt = JWTManager(app)
