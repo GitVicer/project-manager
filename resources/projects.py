@@ -6,6 +6,8 @@ from db import db
 from models import ProjectModel,UserModel
 from schemas import ProjectSchema, ProjectUpdateSchema
 
+from flask import redirect, url_for, session, request
+
 blp = Blueprint("Projects", "projects")
 
 
@@ -41,11 +43,23 @@ class Project(MethodView):
 
         return project
     
+
+from functools import wraps
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'google_token' not in session:
+            return redirect(url_for('Users.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+    
 @blp.route("/project")
 class ProjectList(MethodView):
     
     
     @blp.response(200, ProjectSchema(many=True))
+    @login_required
     def get(self):
         return ProjectModel.query.all()
         

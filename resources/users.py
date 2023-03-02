@@ -8,7 +8,7 @@ from flask_jwt_extended import (
     jwt_required
 )
 from passlib.hash import pbkdf2_sha256
-from flask import Flask, redirect, url_for, session, request
+from flask import redirect, url_for, session, request
 
 from db import db
 from models import UserModel
@@ -75,7 +75,7 @@ def authorized():
             request.args['error_description']
         )
     session['google_token'] = (resp['access_token'], '')
-    return redirect(url_for('Users.index'))
+    return "you are now authorized to operate"
 
 @blp.route('/index')
 def index():
@@ -92,6 +92,11 @@ def index():
 @google.tokengetter
 def get_google_token():
     return session.get('google_token')
+
+@blp.route('/logout')
+def logout():
+    session.pop('google_token', None)
+    return "Logged out"
 
 
 
