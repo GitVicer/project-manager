@@ -9,15 +9,14 @@ from flask_jwt_extended import (
 )
 from passlib.hash import pbkdf2_sha256
 from flask import redirect, url_for, session, request
-
 from db import db
 from models import UserModel
 from schemas import UserSchema
 from blocklist import BLOCKLIST
+from flask_oauthlib.client import OAuth
+from functools import wraps
 
-
-blp = Blueprint("Users", "users", description="Operations on users")
-
+blp = Blueprint("Users", "users")
 
 @blp.route("/register")
 class UserRegister(MethodView):
@@ -40,63 +39,6 @@ class UserRegister(MethodView):
         db.session.commit()
 
         return {"message": "User created successfully."}, 201
-
-
-from flask_oauthlib.client import OAuth
-
-oauth = OAuth()
-
-
-google = oauth.remote_app(
-    'google',
-    consumer_key='300154338446-vgfljlou2df9rd4k4m52shvpk0i0kd99.apps.googleusercontent.com',
-    consumer_secret='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',
-    request_token_params={
-        'scope': 'email'
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    access_token_url='https://accounts.google.com/o/oauth2/token'
-)
-
-
-
-
-@blp.route("/login")
-def login():
-    return google.authorize(callback=url_for('Users.authorized', _external=True))
-
-@blp.route('/authorized')
-def authorized():
-    resp = google.authorized_response()
-    if resp is None:
-        return 'Access denied: reason={0} error={1}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    session['google_token'] = (resp['access_token'], '')
-    return "you are now authorized to operate"
-
-@blp.route('/index')
-def index():
-    if 'google_token' in session:
-        resp = google.get('userinfo')
-        if resp.status == 200:
-            data = resp.data
-            return f'Logged in as {data["email"]}'
-        else:
-            return f'Error: {resp.status} - {resp.text}'
-    else:
-        return redirect(url_for('Users.login'))
-    
-@google.tokengetter
-def get_google_token():
-    return session.get('google_token')
-
-@blp.route('/logout')
-def logout():
-    session.pop('google_token', None)
-    return "Logged out"
 
 
 
@@ -135,16 +77,17 @@ class User(MethodView):
 
     
 @blp.route("/user")
+
 class ProjectList(MethodView):
-    
     
     @blp.response(200, UserSchema(many=True))
     def get(self):
         return UserModel.query.all()
 
-
 @blp.route("/refresh")
+
 class TokenRefresh(MethodView):
+    
     @jwt_required(refresh=True)
     def post(self):
         current_user = get_jwt_identity()
@@ -152,3 +95,57 @@ class TokenRefresh(MethodView):
         jti = get_jwt()["jti"]
         BLOCKLIST.add(jti)
         return {"access_token": new_token}, 200
+
+# Implementation of google authentication
+
+oauth = OAuth()
+
+google = oauth.remote_app(
+    'google',
+    consumer_key='300154338446-vgfljlou2df9rd4k4m52shvpk0i0kd99.apps.googleusercontent.com',
+    consumer_secret='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',
+    request_token_params={
+        'scope': 'email'
+    },
+    base_url='https://www.googleapis.com/oauth2/v1/',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    access_token_url='https://accounts.google.com/o/oauth2/token'
+)
+
+# Function to check if a user is logged in using google authentication
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'google_token' not in session:
+            return redirect(url_for('Users.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# end
+
+@blp.route("/login")
+def login():
+    return google.authorize(callback=url_for('Users.authorized', _external=True))
+
+@blp.route('/authorized')
+def authorized():
+    resp = google.authorized_response()
+    if resp is None:
+        return 'Access denied: reason={0} error={1}'.format(
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+    session['google_token'] = (resp['access_token'], '')
+    return "you are now authorized to operate"
+    
+@google.tokengetter
+def get_google_token():
+    return session.get('google_token')
+
+@blp.route('/logout')
+def logout():
+    session.pop('google_token', None)
+    return "Logged out"
+
+# Implementation of google authentication ends

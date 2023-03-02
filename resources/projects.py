@@ -5,22 +5,21 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ProjectModel,UserModel
 from schemas import ProjectSchema, ProjectUpdateSchema
+from resources.users import login_required
 
-from flask import redirect, url_for, session, request
 
 blp = Blueprint("Projects", "projects")
 
 
 @blp.route("/project/<string:project_id>")
+
 class Project(MethodView):
-    
     
     @blp.response(200, ProjectSchema)
     def get(self, project_id):
         project = ProjectModel.query.get_or_404(project_id)
         return project
     
-    @jwt_required()
     def delete(self, project_id):
         project = ProjectModel.query.get_or_404(project_id)
         db.session.delete(project)
@@ -44,27 +43,17 @@ class Project(MethodView):
         return project
     
 
-from functools import wraps
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'google_token' not in session:
-            return redirect(url_for('Users.login'))
-        return f(*args, **kwargs)
-    return decorated_function
     
 @blp.route("/project")
+
 class ProjectList(MethodView):
-    
     
     @blp.response(200, ProjectSchema(many=True))
     @login_required
     def get(self):
         return ProjectModel.query.all()
         
-
-    
     @blp.arguments(ProjectSchema)
     @blp.response(201, ProjectSchema)
     def post(self, project_data):
