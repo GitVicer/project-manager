@@ -8,6 +8,7 @@ from flask_jwt_extended import (
     jwt_required
 )
 from passlib.hash import pbkdf2_sha256
+from flask import Flask, redirect, url_for, session, request
 
 from db import db
 from models import UserModel
@@ -41,29 +42,57 @@ class UserRegister(MethodView):
         return {"message": "User created successfully."}, 201
 
 
+from flask_oauthlib.client import OAuth
+
+oauth = OAuth()
+
+
+google = oauth.remote_app(
+    'google',
+    consumer_key='300154338446-vgfljlou2df9rd4k4m52shvpk0i0kd99.apps.googleusercontent.com',
+    consumer_secret='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',
+    request_token_params={
+        'scope': 'email'
+    },
+    base_url='https://www.googleapis.com/oauth2/v1/',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    access_token_url='https://accounts.google.com/o/oauth2/token'
+)
+
+
+
+
 @blp.route("/login")
-class UserLogin(MethodView):
-    @blp.arguments(UserSchema)
-    def post(self, user_data):
-        user = UserModel.query.filter(
-            UserModel.username == user_data["username"]
-        ).first()
+def login():
+    return google.authorize(callback=url_for('Users.authorized', _external=True))
 
-        if user and pbkdf2_sha256.verify(user_data["password"], user.password):
-            access_token = create_access_token(identity=user.id, fresh=True)
-            refresh_token = create_refresh_token(user.id)
-            return {"access_token": access_token, "refresh_token": refresh_token}, 200
+@blp.route('/authorized')
+def authorized():
+    resp = google.authorized_response()
+    if resp is None:
+        return 'Access denied: reason={0} error={1}'.format(
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+    session['google_token'] = (resp['access_token'], '')
+    return redirect(url_for('Users.index'))
 
-        abort(401, message="Invalid credentials.")
+@blp.route('/index')
+def index():
+    if 'google_token' in session:
+        resp = google.get('userinfo')
+        if resp.status == 200:
+            data = resp.data
+            return f'Logged in as {data["email"]}'
+        else:
+            return f'Error: {resp.status} - {resp.text}'
+    else:
+        return redirect(url_for('Users.login'))
+    
+@google.tokengetter
+def get_google_token():
+    return session.get('google_token')
 
-
-@blp.route("/logout")
-class UserLogout(MethodView):
-    @jwt_required()
-    def post(self):
-        jti = get_jwt()["jti"]
-        BLOCKLIST.add(jti)
-        return {"message": "Successfully logged out"}, 200
 
 
 @blp.route("/user/<int:user_id>")

@@ -21,11 +21,13 @@ def create_app():
     app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
     app.config["JWT_SECRET_KEY"] = "vicky"
 
+    app.secret_key="my secret key"
     
+
     db.init_app(app)
     api = Api(app)
     jwt = JWTManager(app)
-
+    
     
     @jwt.token_in_blocklist_loader
     def check_if_token_in_blocklist(jwt_header, jwt_payload):
@@ -90,6 +92,8 @@ def create_app():
     api.register_blueprint(managerblueprint)
     api.register_blueprint(userblueprint)
 
+
+    
     return app    
 
 

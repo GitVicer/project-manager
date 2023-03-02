@@ -44,15 +44,11 @@ class Project(MethodView):
 @blp.route("/project")
 class ProjectList(MethodView):
     
-    @jwt_required()
+    
     @blp.response(200, ProjectSchema(many=True))
     def get(self):
-        user_id = get_jwt_identity()
-        user = UserModel.query.get(user_id)
-        if user.AdminStatus == True:
-            return ProjectModel.query.all()
-        else:
-            abort(400, message = "Admin priviledge required")
+        return ProjectModel.query.all()
+        
 
     
     @blp.arguments(ProjectSchema)
