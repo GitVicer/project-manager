@@ -5,19 +5,19 @@ from db import db
 from models import ManagerModel
 from schemas import ManagerSchema, ManagerUpdateSchema
 from flask_jwt_extended import jwt_required
+from resources.users import login_required
 
 blp = Blueprint("Managers", "managers")
 
 @blp.route("/manager/<string:manager_id>")
+
 class Manager(MethodView):
     
-   
     @blp.response(200, ManagerSchema)
     def get(self, manager_id):
         manager = ManagerModel.query.get_or_404(manager_id)
         return manager
     
-    @jwt_required()
     def delete(self, manager_id):
         manager = ManagerModel.query.get_or_404(manager_id)
         db.session.delete(manager)
@@ -44,6 +44,7 @@ class ManagerList(MethodView):
     
     
     @blp.response(200, ManagerSchema(many=True))
+    @login_required
     def get(self):
         return ManagerModel.query.all()
     

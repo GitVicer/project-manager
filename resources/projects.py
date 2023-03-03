@@ -5,20 +5,21 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ProjectModel,UserModel
 from schemas import ProjectSchema, ProjectUpdateSchema
+from resources.users import login_required
+
 
 blp = Blueprint("Projects", "projects")
 
 
 @blp.route("/project/<string:project_id>")
+
 class Project(MethodView):
-    
     
     @blp.response(200, ProjectSchema)
     def get(self, project_id):
         project = ProjectModel.query.get_or_404(project_id)
         return project
     
-    @jwt_required()
     def delete(self, project_id):
         project = ProjectModel.query.get_or_404(project_id)
         db.session.delete(project)
@@ -41,20 +42,17 @@ class Project(MethodView):
 
         return project
     
-@blp.route("/project")
-class ProjectList(MethodView):
-    
-    @jwt_required()
-    @blp.response(200, ProjectSchema(many=True))
-    def get(self):
-        user_id = get_jwt_identity()
-        user = UserModel.query.get(user_id)
-        if user.AdminStatus == True:
-            return ProjectModel.query.all()
-        else:
-            abort(400, message = "Admin privilege required")
 
     
+@blp.route("/project")
+
+class ProjectList(MethodView):
+    
+    @blp.response(200, ProjectSchema(many=True))
+    @login_required
+    def get(self):
+        return ProjectModel.query.all()
+        
     @blp.arguments(ProjectSchema)
     @blp.response(201, ProjectSchema)
     def post(self, project_data):
