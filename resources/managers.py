@@ -5,7 +5,7 @@ from db import db
 from models import ManagerModel
 from schemas import ManagerSchema, ManagerUpdateSchema
 from flask_jwt_extended import jwt_required
-from resources.users import login_required
+from resources.users import admin_required
 
 blp = Blueprint("Managers", "managers")
 
@@ -44,7 +44,6 @@ class ManagerList(MethodView):
     
     
     @blp.response(200, ManagerSchema(many=True))
-    @login_required
     def get(self):
         return ManagerModel.query.all()
     

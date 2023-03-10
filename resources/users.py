@@ -1,22 +1,21 @@
 from flask.views import MethodView
-from flask import redirect, url_for, request, session
-from google_auth_oauthlib.flow import Flow
+from flask import redirect, url_for, session, request
 from flask_smorest import Blueprint, abort
 from flask_jwt_extended import (
     create_access_token,
-    create_refresh_token,
     get_jwt_identity,
     get_jwt,
     jwt_required
 )
 from passlib.hash import pbkdf2_sha256
-from flask import redirect, url_for, session, request
+from flask import redirect, url_for
 from db import db
 from models import UserModel
 from schemas import UserSchema
-from blocklist import BLOCKLIST
+from blocklist import Blocklist
 from flask_oauthlib.client import OAuth
-from functools import wraps
+
+import requests
 
 blp = Blueprint("Users", "users")
 
@@ -95,59 +94,103 @@ class TokenRefresh(MethodView):
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
         jti = get_jwt()["jti"]
-        BLOCKLIST.add(jti)
+        Blocklist.add(jti)
         return {"access_token": new_token}, 200
+    
+#Implementation of auth0
 
-# Implementation of google authentication
+auth0_domain = 'dev-u1sb6wm0ovrzs1ii.us.auth0.com'
+client_id = '9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI'
+client_secret = 'SEAUBQJO-_n0wZWnwVbTAlbPAfAyeu8zMYMGEUsK0MgqTWtS3as7m8tZumsLYjzz'
+callback_url = 'https://localhost:5000/callback'
+    
+# checking decorator
 
-oauth = OAuth()
+def requires_auth(f):
+    def decorated(*args, **kwargs):
+        if 'profile' not in session:
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated
 
-google = oauth.remote_app(
-    'google',
-    consumer_key='300154338446-vgfljlou2df9rd4k4m52shvpk0i0kd99.apps.googleusercontent.com',
-    consumer_secret='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',
-    request_token_params={
-        'scope': 'email'
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    access_token_url='https://accounts.google.com/o/oauth2/token'
-)
 
-# Function to check if a user is logged in using google authentication
 
-def login_required(f):
-    @wraps(f)
+ 
+# Login route
+@blp.route('/login')
+def login():
+    return auth0.authorize(callback=url_for('Users.auth0_callback', _external=True))
+
+# Define callback route
+@blp.route('/auth0_callback')
+def auth0_callback():
+    resp = auth0.authorized_response()
+    session['auth0_token'] = resp['access_token']
+    return "you are authorized"
+
+# Define logout route
+@blp.route('/logout')
+def logout():
+    session.clear()
+    return 'logged out'
+
+
+# Function to check admin status
+
+def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'google_token' not in session:
+            return redirect(url_for('Users.login'))
+        google_token = session["google_token"]
+        headers = {"Authorization": f"Bearer {google_token}"}
+        response = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers=headers)
+        user_email = response.json()["email"]
+
+        if user_email not in ["vickydwivedi989@gmail.com"]:
+            return
+        else:
+            return f(*args, **kwargs)
+        
+    return decorated_function
+
+# Function to check if a user is logged in using auth0 authentication
+
+def login_required(f):
+    def decorated_function(*args, **kwargs):
+        if 'profile' not in session:
             return redirect(url_for('Users.login'))
         return f(*args, **kwargs)
     return decorated_function
 
 # end
+oauth = OAuth()
 
-@blp.route("/login")
-def login():
-    return google.authorize(callback=url_for('Users.authorized', _external=True))
+auth0 = oauth.remote_app(
+    'auth0',
+    consumer_key='9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI',
+    consumer_secret='SEAUBQJO-_n0wZWnwVbTAlbPAfAyeu8zMYMGEUsK0MgqTWtS3as7m8tZumsLYjzz',
+    base_url='dev-u1sb6wm0ovrzs1ii.us.auth0.com',
+    access_token_url='dev-u1sb6wm0ovrzs1ii.us.auth0.com/oauth/token',
+    authorize_url='dev-u1sb6wm0ovrzs1ii.us.auth0.com/authorize',
+    request_token_params={
+        'scope': 'openid profile email'
+    },
+)
 
 @blp.route('/authorized')
 def authorized():
     resp = google.authorized_response()
-    if resp is None:
-        return 'Access denied: reason={0} error={1}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    session['google_token'] = (resp['access_token'], '')
-    return "you are now authorized to operate"
+    session['google_token'] = (resp['access_token'])
+    if "profile" in session:
+        google_token = session["google_token"]
+        headers = {"Authorization": f"Bearer {google_token}"}
+        response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers=headers)
+        user_info = response.json()
+        user_email = user_info["email"]
+    if user_email in ["vickydwivedi989@gmail.com"]:
+        return "you are admin, authorized to operate"
+    else:    
+        return "you are now authorized to operate but restircted to limited info"
     
-@google.tokengetter
-def get_google_token():
-    return session.get('google_token')
 
-@blp.route('/logout')
-def logout():
-    session.pop('google_token', None)
-    return "Logged out"
 
-# Implementation of google authentication ends

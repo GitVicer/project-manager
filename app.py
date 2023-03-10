@@ -1,15 +1,25 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_smorest import Api
 from flask_jwt_extended import JWTManager
-from blocklist import BLOCKLIST
+from blocklist import Blocklist
 from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
 from resources.users import blp as userblueprint
+
 
 from db import db
 
 def create_app():
     app = Flask(__name__)
+
+    #setting https self signed certificate
+
+    app.config["ENV"] = "development"
+    app.config["DEBUG"] = True
+    app.config["FLASK_RUN_CERT"] = "adhoc"
+
+    # app configurations
+
     app.config["API_TITLE"] = "Project Manager API"
     app.config["API_VERSION"] = "v1"
     app.config["OPENAPI_VERSION"] = "3.0.3"
@@ -22,68 +32,21 @@ def create_app():
     app.config["JWT_SECRET_KEY"] = "vicky"
 
     app.secret_key="my secret key"
+
+    #   Auth0 configs
+
+    app.config['AUTH0_DOMAIN'] = 'dev-u1sb6wm0ovrzs1ii.us.auth0.com'
+    app.config['AUTH0_CLIENT_ID'] = '9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI'
+    app.config['AUTH0_CLIENT_SECRET'] = 'SEAUBQJO-_n0wZWnwVbTAlbPAfAyeu8zMYMGEUsK0MgqTWtS3as7m8tZumsLYjzz'
+    app.config['AUTH0_CALLBACK_URL'] = 'http://localhost:5000/callback'
+    
+
+    
     
 
     db.init_app(app)
     api = Api(app)
-    jwt = JWTManager(app)
     
-    
-    @jwt.token_in_blocklist_loader
-    def check_if_token_in_blocklist(jwt_header, jwt_payload):
-        return jwt_payload["jti"] in BLOCKLIST
-    
-    
-    @jwt.expired_token_loader
-    def expired_token_callback(jwt_header, jwt_payload):
-        return (
-            jsonify({"message": "The token has expired.", "error": "token_expired"}),
-            401,
-        )
-    
-    @jwt.invalid_token_loader
-    def invalid_token_callback(error):
-        return (
-            jsonify(
-                {"message": "Signature verification failed.", "error": "invalid_token"}
-            ),
-            401,
-        )
-    
-    @jwt.unauthorized_loader
-    def missing_token_callback(error):
-        return (
-            jsonify(
-                {
-                    "description": "Request does not contain an access token.",
-                    "error": "authorization_required",
-                }
-            ),
-            401,
-        )
-    
-    @jwt.needs_fresh_token_loader
-    def token_not_fresh_callback(jwt_header, jwt_payload):
-        return (
-            jsonify(
-                {
-                    "description": "The token is not fresh.",
-                    "error": "fresh_token_required",
-                }
-            ),
-            401,
-        )
-    
-    @jwt.revoked_token_loader
-    def revoked_token_callback(jwt_header, jwt_payload):
-        return (
-            jsonify(
-                {"description": "The token has been revoked.", "error": "token_revoked"}
-            ),
-            401,
-        )
-
-
 
     with app.app_context():
         db.create_all()
@@ -92,8 +55,6 @@ def create_app():
     api.register_blueprint(managerblueprint)
     api.register_blueprint(userblueprint)
 
-
-    
     return app    
 
 
