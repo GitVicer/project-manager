@@ -1,5 +1,5 @@
 from flask.views import MethodView
-from flask import redirect, url_for, request, session
+from flask import redirect, url_for, request, session, jsonify
 from google_auth_oauthlib.flow import Flow
 from flask_smorest import Blueprint, abort
 from flask_jwt_extended import (
@@ -10,37 +10,55 @@ from flask_jwt_extended import (
     jwt_required
 )
 from passlib.hash import pbkdf2_sha256
-from flask import redirect, url_for, session, request
 from db import db
 from models import UserModel
 from schemas import UserSchema
 from blocklist import BLOCKLIST
-from flask_oauthlib.client import OAuth
+from authlib.integrations.flask_client import OAuth
 from functools import wraps
+from urllib.parse import urlencode
+
+
+# auth0
+
+AUTH0_CLIENT_ID = '9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI'
+AUTH0_CLIENT_SECRET = 'SEAUBQJO-_n0wZWnwVbTAlbPAfAyeu8zMYMGEUsK0MgqTWtS3as7m8tZumsLYjzz'
+AUTH0_DOMAIN = 'dev-u1sb6wm0ovrzs1ii.us.auth0.com'
+AUTH0_CALLBACK_URL = 'http://localhost:5000/callback'
+
+oauth = OAuth()
+
+auth0 = oauth.register(
+    'auth0',
+    client_id=AUTH0_CLIENT_ID,
+    client_secret=AUTH0_CLIENT_SECRET,
+    api_base_url='https://{domain}'.format(domain=AUTH0_DOMAIN),
+    access_token_url='https://{domain}/oauth/token'.format(domain=AUTH0_DOMAIN),
+    authorize_url='https://{domain}/authorize'.format(domain=AUTH0_DOMAIN),
+    client_kwargs={
+        'scope': 'openid profile email',
+    },
+)
 
 blp = Blueprint("Users", "users")
 
-@blp.route("/register")
-class UserRegister(MethodView):
-    @blp.arguments(UserSchema)
-    def post(self, user_data):
-        if UserModel.query.filter(UserModel.username == user_data["username"]).first():
-            abort(409, message="A user with that username already exists.")
-        
-        user = UserModel(
-            username=user_data["username"],
-            password=pbkdf2_sha256.hash(user_data["password"])
-        )
+@blp.route('/login')
+def login():
+    return auth0.authorize_redirect(redirect_uri=AUTH0_CALLBACK_URL)
 
-        db.session.add(user)
-        db.session.commit()
+@blp.route('/callback')
+def callback():
+    auth0.authorize_access_token()
+    resp = auth0.get('userinfo')
+    userinfo = resp.json()
+    # Store user info in session or database
+    return "You are now authorised to access the data"
 
-        if user.id==1:
-            user.AdminStatus = True
-
-        db.session.commit()
-
-        return {"message": "User created successfully."}, 201
+@blp.route('/logout')
+def logout():
+    session.clear()
+    params = {'client_id': '9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI'}
+    return redirect(oauth.auth0.api_base_url + '/v2/logout?' + urlencode(params))
 
 
 
@@ -100,19 +118,7 @@ class TokenRefresh(MethodView):
 
 # Implementation of google authentication
 
-oauth = OAuth()
 
-google = oauth.remote_app(
-    'google',
-    consumer_key='300154338446-vgfljlou2df9rd4k4m52shvpk0i0kd99.apps.googleusercontent.com',
-    consumer_secret='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',
-    request_token_params={
-        'scope': 'email'
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    access_token_url='https://accounts.google.com/o/oauth2/token'
-)
 
 # Function to check if a user is logged in using google authentication
 
@@ -126,24 +132,7 @@ def login_required(f):
 
 # end
 
-@blp.route("/login")
-def login():
-    return google.authorize(callback=url_for('Users.authorized', _external=True))
-
-@blp.route('/authorized')
-def authorized():
-    resp = google.authorized_response()
-    if resp is None:
-        return 'Access denied: reason={0} error={1}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    session['google_token'] = (resp['access_token'], '')
-    return "you are now authorized to operate"
     
-@google.tokengetter
-def get_google_token():
-    return session.get('google_token')
 
 @blp.route('/logout')
 def logout():

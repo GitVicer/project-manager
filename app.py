@@ -4,6 +4,7 @@ from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
 from resources.users import blp as userblueprint
 from db import db 
+from resources.users import oauth
 
 def create_app():
     app = Flask(__name__)
@@ -22,7 +23,8 @@ def create_app():
 
     db.init_app(app)
     api = Api(app)
-
+    oauth.init_app(app)
+    
     with app.app_context():
         db.create_all()
 
