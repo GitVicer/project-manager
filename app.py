@@ -2,9 +2,9 @@ from flask import Flask
 from flask_smorest import Api
 from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
-from resources.users import blp as userblueprint
+from resources.auth import blp as userblueprint
 from db import db 
-from resources.users import oauth
+from resources.auth import oauth
 
 def create_app():
     app = Flask(__name__)

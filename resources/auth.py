@@ -3,7 +3,7 @@ from flask_smorest import Blueprint
 from authlib.integrations.flask_client import OAuth
 from urllib.parse import urlencode
 
-blp = Blueprint("Users", "users")
+blp = Blueprint("Auth", "auth")
 
 # auth0 implementation
 
@@ -29,7 +29,7 @@ auth0 = oauth.register(
 @blp.route("/login")
 def login():
     return oauth.auth0.authorize_redirect(
-        redirect_uri=url_for("Users.callback", _external=True)
+        redirect_uri=url_for("Auth.callback", _external=True)
     )
 
 @blp.route("/callback")
@@ -49,7 +49,7 @@ def logout():
 def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
-            return redirect(url_for('Users.login'))
+            return redirect(url_for('Auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 

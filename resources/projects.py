@@ -4,7 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
 from models import ProjectModel
 from schemas import ProjectSchema, ProjectUpdateSchema
-from resources.users import login_required
+from resources.auth import login_required
 
 
 blp = Blueprint("Projects", "projects")

@@ -5,7 +5,7 @@ from db import db
 from models import ManagerModel
 from schemas import ManagerSchema, ManagerUpdateSchema
 from flask_jwt_extended import jwt_required
-from resources.users import login_required
+from resources.auth import login_required
 
 blp = Blueprint("Managers", "managers")
 
