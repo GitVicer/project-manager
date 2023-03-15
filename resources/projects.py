@@ -1,9 +1,8 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from db import db
-from models import ProjectModel,UserModel
+from models import ProjectModel
 from schemas import ProjectSchema, ProjectUpdateSchema
 from resources.users import login_required
 
