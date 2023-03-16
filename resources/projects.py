@@ -25,6 +25,8 @@ class Project(MethodView):
         db.session.commit()
         return {"message": "Project deleted"}, 200
     
+    
+    
     @blp.arguments(ProjectUpdateSchema)
     @blp.response(200, ProjectSchema)
     def put(self, project_data, project_id):
@@ -64,6 +66,14 @@ class ProjectList(MethodView):
         except SQLAlchemyError:
             abort(500, message = "An error occured while entering the data")
         return project_data   
+    
+    def delete(self):
+        projects = ProjectModel.query.all()
+        for project in projects:
+            db.session.delete(project)
+        db.session.commit()
+        return {"message": "All projects deleted"}, 200
+
 
 
 

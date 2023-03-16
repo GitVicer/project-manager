@@ -64,4 +64,12 @@ class ManagerList(MethodView):
 
         return manager_data
     
+    def delete(self):
+        managers = ManagerModel.query.all()
+        for manager in managers:
+            db.session.delete(manager)
+        db.session.commit()
+        return {"message": "All managers deleted"}, 200
+
+    
     
