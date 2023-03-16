@@ -10,7 +10,6 @@ blp = Blueprint("Auth", "auth")
 AUTH0_CLIENT_ID = '9D6AjN9xfEPsDiLT4Fc6MadIwDQXcCDI'
 AUTH0_CLIENT_SECRET = 'SEAUBQJO-_n0wZWnwVbTAlbPAfAyeu8zMYMGEUsK0MgqTWtS3as7m8tZumsLYjzz'
 AUTH0_DOMAIN = 'dev-u1sb6wm0ovrzs1ii.us.auth0.com'
-AUTH0_CALLBACK_URL = 'http://localhost:5000/callback'
 
 oauth = OAuth()
 
@@ -26,17 +25,23 @@ auth0 = oauth.register(
     },server_metadata_url=f'https://{AUTH0_DOMAIN}/.well-known/openid-configuration'
 )
 
+# login
+
 @blp.route("/login")
 def login():
     return oauth.auth0.authorize_redirect(
         redirect_uri=url_for("Auth.callback", _external=True)
     )
 
+#callback
+
 @blp.route("/callback")
 def callback():
     token = oauth.auth0.authorize_access_token()
     session["user"] = token
     return "Authorised"
+
+# logout
 
 @blp.route('/logout')
 def logout():
