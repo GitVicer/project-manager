@@ -65,12 +65,12 @@ class ProjectList(MethodView):
             abort(400, message = "A project or client with that name already exists")
         except SQLAlchemyError:
             abort(500, message = "An error occured while entering the data")
-        return project_data   
-    
+        return project_data  
+     
     def delete(self):
         projects = ProjectModel.query.all()
         for project in projects:
-            db.session.delete(project)
+            db.session.delete(project) 
         db.session.commit()
         return {"message": "All projects deleted"}, 200
 
