@@ -2,7 +2,7 @@ from flask import Flask
 from flask_smorest import Api
 from resources.projects import blp as projectblueprint
 from resources.managers import blp as managerblueprint
-from resources.auth import blp as userblueprint
+from resources.auth import blp as authblueprint
 from db import db 
 from resources.auth import oauth
 
@@ -30,7 +30,7 @@ def create_app():
 
     api.register_blueprint(projectblueprint)
     api.register_blueprint(managerblueprint)
-    api.register_blueprint(userblueprint)
+    api.register_blueprint(authblueprint)
 
     return app    
 
